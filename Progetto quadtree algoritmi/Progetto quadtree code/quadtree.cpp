@@ -208,11 +208,11 @@ public:
 template <class T>
 class PointQuadtreeList {
 public:
-	NodePointList<T>* nodo = new NodePointList<T>();
+	NodePointList<T>* node = new NodePointList<T>();
 
 	PointQuadtreeList<T>(T x1, T y1) {
 		Point<T>* ins = new Point<T>(x1, y1);
-		nodo->listPoint.push_back(ins);
+		node->listPoint.push_back(ins);
 	} 
 	
 	void Subdivide(NodePointList<T>* fix, Point<T>* to_ins) {
@@ -289,7 +289,7 @@ public:
 	}
 	
 	PointQuadtreeList<T>* insertPoint(T x, T y) {
-		NodePointList<T>* tmp = nodo;
+		NodePointList<T>* tmp = node;
 		Point<T>* to_ins = new Point<T>(x, y);
 		while (tmp->SplitPoint != NULL) { //the child future position is searched based on x, y coordinates
 			if (x >= tmp->SplitPoint->x) { 
@@ -317,7 +317,7 @@ public:
 	}
 
 	bool search(T x, T y) {
-		NodePointList<T>* tmp = nodo;
+		NodePointList<T>* tmp = node;
 		Point<T> searched(x, y);
 		while (tmp->SplitPoint != NULL) { //the child position is searched based on x, y coordinates
 			if (tmp->SplitPoint->isSamePoint(searched) == true) //put here and not in the while because if it comes out with a null value then a read exception is thrown
@@ -347,7 +347,7 @@ public:
 	}
 	
 	bool cancel(T x, T y) {
-		NodePointList<T>* tmp = nodo;
+		NodePointList<T>* tmp = node;
 		Point<T> canceled(x, y);
 		while (tmp->SplitPoint != NULL) { //the child position is searched based on x, y coordinates
 			if (tmp->SplitPoint->isSamePoint(canceled)) //deleting a split point would cause inconsistency in the quadtree structure
