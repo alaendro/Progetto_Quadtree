@@ -287,7 +287,7 @@ public:
 			return true;
 		else
 			return false;
-	} //TODO crearne una che modifica la chiave
+	} //TODO crearne una che modifica la chiave, uno perché conosce solo la chiave e uno per il punto
 };
 
 
