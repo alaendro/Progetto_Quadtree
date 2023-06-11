@@ -133,7 +133,7 @@ public:
 			return true;
 	}
 
-	bool cancel(T x, T y) {
+	bool cancelLeaf(T x, T y) { //delete only if it's a leaf
 		Point<T> canceled(x, y);
 		NodePoint<T>* tmp = node;
 		while (tmp != NULL && tmp->point->isSamePoint(canceled) != true) { 
@@ -162,9 +162,109 @@ public:
 				delete tmp;
 				return true;
 			}
-			else //Deleting a point is a possible operation if and only if the point in question is in a leaf node, deleting a split point would cause inconsistency in the quadtree structure.
+			else
 				return false;
-		} //TODO rename this function with cancelPoint and create another one that consider a node recursively (scegli uno split point dai figli e così fino alle foglie se anche loro sono padri)
+		}
+	}
+
+	NodePoint<T>* rebalance(NodePoint<T>* toRebalance){
+		float avgX, avgY, validNode = 0;
+		NodePoint<T>* nodeArray = [toRebalance->NE, toRebalance->SE, toRebalance->NW, toRebalance->SW];
+		for(int i = 0; i < 4; i++){
+			if(nodeArray[i] != NULL){
+				avgX += nodeArray[i]->point->x;
+				avgY += nodeArray[i]->point->y;
+				validNode++;
+			}
+		}
+
+		avgX = avgX / validNode;
+		avgY = avgY /validNode;
+
+		float bestChoiceArray[4]; //indicates how close each node point is to the average of node points
+		for(int i = 0; i < 4; i++)
+			bestChoiceArray[i] = INT_MAX;
+
+		for (int i = 0; i < 4; i++){
+			if(nodeArray[i] != NULL)
+				bestChoiceArray[i] = abs(toRebalance->nodeArray[i]->point->x - avgX) + abs(toRebalance->nodeArray[i]->point->y - avgY);
+		}
+
+		float min = bestChoiceArray[0];
+		int index = 0;
+		for (int i = 1; i < 4; i++) { //the minimum value is sought because it is the closest to the average of the points
+			if (min > bestChoiceArray[i]) {
+				min = bestChoiceArray[i];
+				index = i;
+			}
+		}
+		return nodeArray[index];
+	}
+
+	bool cancel(T x, T y) {
+		Point<T> canceled(x, y);
+		NodePoint<T>* tmp = node;
+		while (tmp != NULL && tmp->point->isSamePoint(canceled) != true) { 
+			if (x >= tmp->point->x) { //the position is searched based on x, y coordinates
+				if (y >= tmp->point->y) {
+					tmp = tmp->NE;
+				}
+				else {
+					tmp = tmp->SE;
+				}
+			}
+			else {
+				if (y >= tmp->point->y) {
+					tmp = tmp->NW;
+				}
+				else {
+					tmp = tmp->SW;
+				}
+			}
+		}
+		if (tmp == NULL)
+			return false;
+		else { //delete the point and recompone the structure
+			//take the nearest point for avoid high unbalanced structure
+			NodePoint<T>* bestNode = rebalance(tmp);
+			bestNode->root = tmp->root;
+			if(tmp == tmp->root->NE){
+				tmp->root->NE = bestNode;
+			}
+			else if(tmp == tmp->root->SE){
+				tmp->root->SE = bestNode;
+			}
+			else if(tmp == tmp->root->NW){
+				tmp->root->NW = bestNode;
+			}
+			else if(tmp == tmp->root->SW){
+				tmp->root->SW = bestNode;
+			}
+			else{ //unexepted error
+				return false;
+			}
+
+			x = bestNode->point->x;
+			y = bestNode->point->y;
+			if (x >= tmp->point->x) {
+				if (y >= tmp->point->y) {
+					bestNode->NE = tmp->NE;
+				}
+				else {
+					bestNode->SE = tmp->SE;
+				}
+			}
+			else {
+				if (y >= tmp->point->y) {
+					bestNode->NW = tmp->NW;
+				}
+				else {
+					bestNode->SW = tmp->SW;
+				}
+			}
+			delete tmp;
+			return true;
+		}
 	}
 
 	bool keyPresence(string key) {
