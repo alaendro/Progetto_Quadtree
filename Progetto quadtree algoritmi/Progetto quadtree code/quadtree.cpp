@@ -196,7 +196,7 @@ struct NodePointList {
 public:
 	vector<Point<T>*> listPoint; //vector was used instead of list+iterator for simplicity
 	Point<T>* SplitPoint = NULL;
-	int dim = 10;
+	int dim = 10; //TODO fare dei test per vedere quale è la dimensione ottimale
 
 	NodePointList<T>* NW = NULL;
 	NodePointList<T>* NE = NULL;
