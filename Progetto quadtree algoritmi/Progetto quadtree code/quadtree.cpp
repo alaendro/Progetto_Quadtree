@@ -167,7 +167,7 @@ public:
 		}
 	}
 
-	NodePoint<T>* rebalance(NodePoint<T>* toRebalance){
+	NodePoint<T>* rebalance(NodePoint<T>* toRebalance){ //TOTEST
 		float avgX, avgY, validNode = 0;
 		NodePoint<T>* nodeArray = [toRebalance->NE, toRebalance->SE, toRebalance->NW, toRebalance->SW];
 		for(int i = 0; i < 4; i++){
@@ -201,7 +201,7 @@ public:
 		return nodeArray[index];
 	}
 
-	bool cancel(T x, T y) {
+	bool cancel(T x, T y) { //TOTEST
 		Point<T> canceled(x, y);
 		NodePoint<T>* tmp = node;
 		while (tmp != NULL && tmp->point->isSamePoint(canceled) != true) { 
@@ -287,7 +287,59 @@ public:
 			return true;
 		else
 			return false;
-	} //TODO crearne una che modifica la chiave, uno perché conosce solo la chiave e uno per il punto
+	}
+
+	bool changeKey(string key, string new_key){ //TOTEST
+		queue<NodePoint<T>*> coda; //queue used to parse all nodes in branch order
+		coda.push(node);
+		NodePoint<T>* tmp = new NodePoint<T>();
+		while (tmp->aKey != key && coda.empty() != true) {
+			tmp = coda.front();
+			coda.pop();
+			if (tmp->NE != NULL)
+				coda.push(tmp->NE);
+			if (tmp->NW != NULL)
+				coda.push(tmp->NW);
+			if (tmp->SE != NULL)
+				coda.push(tmp->SE);
+			if (tmp->SW != NULL)
+				coda.push(tmp->SW);
+		}
+		if (tmp->aKey == key)
+			tmp->aKey = new_key;
+			return true;
+		else
+			return false;
+	}
+
+	bool changePointKey(T x, T y, string new_key){ //TOTEST
+		Point<T> canceled(x, y);
+		NodePoint<T>* tmp = node;
+		while (tmp != NULL && tmp->aKey != key) { 
+			if (x >= tmp->point->x) { //the position is searched based on x, y coordinates
+				if (y >= tmp->point->y) {
+					tmp = tmp->NE;
+				}
+				else {
+					tmp = tmp->SE;
+				}
+			}
+			else {
+				if (y >= tmp->point->y) {
+					tmp = tmp->NW;
+				}
+				else {
+					tmp = tmp->SW;
+				}
+			}
+		}
+		if (tmp == NULL)
+			return false;
+		else {
+			tmp->aKey = new_key;
+			return true;
+		}
+	}
 };
 
 
@@ -313,31 +365,41 @@ public:
 	PointQuadtreeList<T>(T x1, T y1) {
 		Point<T>* ins = new Point<T>(x1, y1);
 		node->listPoint.push_back(ins);
-	} 
-	
-	void Subdivide(NodePointList<T>* fix, Point<T>* to_ins) {
+	}
+
+	int getBestPointPosition(int dim, vector<Point<T>*> listPoint){
 		float averageX = 0;
 		float averageY = 0;
-		for (int i = 0; i < fix->dim; i++) {
-			averageX += fix->listPoint[i]->x;
-			averageY += fix->listPoint[i]->y;
+		for (int i = 0; i < dim; i++) {
+			averageX += listPoint[i]->x;
+			averageY += listPoint[i]->y;
 		}
 
-		averageX = averageX / fix->dim;
-		averageY = averageY / fix->dim;
+		averageX = averageX / dim;
+		averageY = averageY / dim;
 		float bestChoiceArray[10]; //indicates how close each node point is to the average of node points
 
-		for (int i = 0; i < fix->dim; i++)
-			bestChoiceArray[i] = abs(fix->listPoint[i]->x - averageX) + abs(fix->listPoint[i]->y - averageY);
-
+		for (int i = 0; i < dim; i++)
+			bestChoiceArray[i] = abs(listPoint[i]->x - averageX) + abs(listPoint[i]->y - averageY);
+		
 		float min = bestChoiceArray[0];
 		int index = 0;
-		for (int i = 1; i < fix->dim; i++) { //the minimum value is sought because it is the closest to the average of the points
+		for (int i = 1; i < dim; i++) { //the minimum value is sought because it is the closest to the average of the points
 			if (min > bestChoiceArray[i]) {
 				min = bestChoiceArray[i];
 				index = i;
 			}
 		}
+
+		return index;
+	}
+
+	int getBestChoicePositionFromVector(NodePointList<T>* fix){
+		return getBestPointPosition(fix->dim, fix->listPoint);
+	}
+	
+	void Subdivide(NodePointList<T>* fix, Point<T>* to_ins) {
+		int index = getBestChoicePositionFromVector(fix);
 		Point<T>* best = new Point<T>();
 		best = fix->listPoint[index];
 		fix->SplitPoint = best;
@@ -368,24 +430,30 @@ public:
 			}
 		}
 
-		if (to_ins->x >= fix->SplitPoint->x) { //the point that triggered the subdivide and has to be inserted
-			if (to_ins->y >= fix->SplitPoint->y) {
-				fix->NE->listPoint.push_back(to_ins);
+		if(to_ins != NULL){
+			if (to_ins->x >= fix->SplitPoint->x) { //the point that triggered the subdivide and has to be inserted
+				if (to_ins->y >= fix->SplitPoint->y) {
+					fix->NE->listPoint.push_back(to_ins);
+				}
+				else {
+					fix->SE->listPoint.push_back(to_ins);
+				}
 			}
 			else {
-				fix->SE->listPoint.push_back(to_ins);
+				if (to_ins->y >= fix->SplitPoint->y) {
+					fix->NW->listPoint.push_back(to_ins);
+				}
+				else {
+					fix->SW->listPoint.push_back(to_ins);
+				}
 			}
+	//		cout << "SplitPoint " << fix->SplitPoint->x << " " << fix->SplitPoint->y << endl;
+			fix->listPoint.clear();
 		}
-		else {
-			if (to_ins->y >= fix->SplitPoint->y) {
-				fix->NW->listPoint.push_back(to_ins);
-			}
-			else {
-				fix->SW->listPoint.push_back(to_ins);
-			}
+		else{
+
 		}
-//		cout << "SplitPoint " << fix->SplitPoint->x << " " << fix->SplitPoint->y << endl;
-		fix->listPoint.clear();
+		
 	}
 	
 	PointQuadtreeList<T>* insertPoint(T x, T y) {
@@ -446,11 +514,11 @@ public:
 		return false;
 	}
 	
-	bool cancel(T x, T y) {
+	bool cancelOnLeaf(T x, T y) {
 		NodePointList<T>* tmp = node;
 		Point<T> canceled(x, y);
 		while (tmp->SplitPoint != NULL) { //the child position is searched based on x, y coordinates
-			if (tmp->SplitPoint->isSamePoint(canceled)) //deleting a split point would cause inconsistency in the quadtree structure
+			if (tmp->SplitPoint->isSamePoint(canceled)) //deleting a split point would cause inconsistency in the quadtree structure if not handled
 				return false;
 			if (x >= tmp->SplitPoint->x) {
 				if (y >= tmp->SplitPoint->y) {
@@ -476,6 +544,88 @@ public:
 			}
 		}
 		return false;
+	}
+
+	void subdivideErase(NodePointList<T>* fix){
+		/*
+		cerca lo split point tra i figli che è il migliore
+		se manca lo split point allora vedere il migliore considerando anche tutti i figli
+		per splint point che hanno sotto altri split point bisogna gestire ricorsivamente la subdivide()
+		cioè si punta ad avere un caso in cui gli unici punti interessati sono punti non di splitpoint in cui si fa la subdivide()
+		a quel punto di potrebbe sfruttare la semplice subdivide() gestendo il caso del punto == null
+
+		caso 1
+		tutti figli sono splitpoint -> si cerca tra quelli e si fa ricorsivamente la subdivide
+		caso 2
+		tutti i figli sono vector -> si cerca tra quelli, si toglie dalla lista e si mette come punto migliore così da non ribilanciare
+		caso 3
+		ci sono figli vector e splitpoint -> prendere il migliore degli split point e considerarlo insieme ai vector
+		caso 3.1 figlio splitpoint allora si fa ricorsivamente la subdivide
+		caso 3.2 figlio dal vector e si mette come punto migliore così da non ribilanciare
+		*/
+
+		vector<Point<T>*> setOfSplitPoints;
+		vector<Point<T>*> splitPoints;
+		if(tmp->NE->SplitPoint != NULL)
+			setOfSplitPoints.push_back(tmp->NE->SplitPoint)
+		else
+			splitPoints.insert(splitPoints.end(), tmp->NE->listPoint.begin(), tmp->NE->listPoint.end());
+
+		if(tmp->SE->SplitPoint != NULL)
+			setOfSplitPoints.push_back(tmp->SE->SplitPoint)
+		else
+			splitPoints.insert(splitPoints.end(), tmp->SE->listPoint.begin(), tmp->SE->listPoint.end());
+
+		if(tmp->NW->SplitPoint != NULL)
+			setOfSplitPoints.push_back(tmp->NW->SplitPoint)
+		else
+			splitPoints.insert(splitPoints.end(), tmp->NW->listPoint.begin(), tmp->NW->listPoint.end());
+
+		if(tmp->SW->SplitPoint != NULL)
+			setOfSplitPoints.push_back(tmp->SW->SplitPoint)
+		else
+			splitPoints.insert(splitPoints.end(), tmp->SW->listPoint.begin(), tmp->SW->listPoint.end());
+
+		int indexSplitPoints;
+		if(setOfSplitPoints.size() != 0)
+			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints);
+		else if(setOfSplitPoints.size() == 1)
+			indexSplitPoints = 0;
+		
+		splitPoints.push_back(setOfSplitPoints[indexSplitPoints]);
+	}
+
+	bool cancel(T x, T y){
+		NodePointList<T>* tmp = node;
+		Point<T> canceled(x, y);
+		bool samePoint = false;
+		while (tmp->SplitPoint != NULL) { //the child position is searched based on x, y coordinates
+			if (tmp->SplitPoint->isSamePoint(canceled)){
+				samePoint = true
+				break;
+			}
+			if (x >= tmp->SplitPoint->x) {
+				if (y >= tmp->SplitPoint->y) {
+					tmp = tmp->NE;
+				}
+				else {
+					tmp = tmp->SE;
+				}
+			}
+			else {
+				if (y >= tmp->SplitPoint->y) {
+					tmp = tmp->NW;
+				}
+				else {
+					tmp = tmp->SW;
+				}
+			}
+		}
+		if(samePoint == false)
+			return false;
+		else{
+			subdivideErase(tmp);
+		}
 	}
 	//TODO si può chiamare la subdivideErase() che permette di cancellare split point e che viene richiamata ricorsivamente nel caso il nuovo split point fa da split point per un sotto quadtree
 };
