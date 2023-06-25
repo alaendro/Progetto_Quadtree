@@ -3,6 +3,7 @@
 #include <queue>
 #include <cmath>
 #include <iostream>
+#include <tuple>
 using namespace std;
 
 template <class T>
@@ -397,6 +398,60 @@ public:
 	int getBestChoicePositionFromVector(NodePointList<T>* fix){
 		return getBestPointPosition(fix->dim, fix->listPoint);
 	}
+
+	tuple<vector<Point<T>*>, vector<Point<T>*>> getVectorOfQuadtreePoint(NodePointList<T>* root){ //TOTEST
+		vector<Point<T>*> setOfSplitPoints;
+		vector<Point<T>*> splitPoints;
+		if(fix->NE->SplitPoint != NULL)
+			setOfSplitPoints.push_back(fix->NE->SplitPoint);
+		else
+			splitPoints.insert(splitPoints.end(), fix->NE->listPoint.begin(), fix->NE->listPoint.end());
+
+		if(fix->SE->SplitPoint != NULL)
+			setOfSplitPoints.push_back(fix->SE->SplitPoint);
+		else
+			splitPoints.insert(splitPoints.end(), fix->SE->listPoint.begin(), fix->SE->listPoint.end());
+
+		if(fix->NW->SplitPoint != NULL)
+			setOfSplitPoints.push_back(fix->NW->SplitPoint);
+		else
+			splitPoints.insert(splitPoints.end(), fix->NW->listPoint.begin(), fix->NW->listPoint.end());
+
+		if(fix->SW->SplitPoint != NULL)
+			setOfSplitPoints.push_back(fix->SW->SplitPoint);
+		else
+			splitPoints.insert(splitPoints.end(), fix->SW->listPoint.begin(), fix->SW->listPoint.end());
+
+		return {setOfSplitPoints, splitPoints}; //TODO fix
+	}
+
+	void checkIntegrity(NodePointList<T>* fix){
+		vector<Point<T>*> [setOfSplitPoints, splitPoints] = getVectorOfQuadtreePoint(fix);
+		vector<Point<T>*> allPoints;
+		allPoints.insert(allPoints.end(), setOfSplitPoints.begin(), setOfSplitPoints.end());
+		allPoints.insert(allPoints.end(), splitPoints.begin(), splitPoints.end());
+
+		//TODO persistenza nel capire da dove provengono i punti, oppure ricreare?
+		for(int i = 0; i < allPoints.size(); i++){
+			if (allPoints[i].x >= fix->SplitPoint->x) { 
+				if (allPoints[i].y >= fix->SplitPoint->y) {
+					fix = fix->NE;
+				}
+				else {
+					fix = fix->SE;
+				}
+			}
+			else {
+				if (allPoints[i].y >= fix->SplitPoint->y) {
+					fix = fix->NW;
+				}
+				else {
+					fix = fix->SW;
+				}
+			}
+		}
+		
+	}	
 	
 	void Subdivide(NodePointList<T>* fix, Point<T>* to_ins) {
 		int index = getBestChoicePositionFromVector(fix);
@@ -451,7 +506,7 @@ public:
 			fix->listPoint.clear();
 		}
 		else{
-
+			//TODO per subdivide erase
 		}
 		
 	}
@@ -546,7 +601,7 @@ public:
 		return false;
 	}
 
-	void subdivideErase(NodePointList<T>* fix){
+	void subdivideErase(NodePointList<T>* fix){ //TODO
 		/*
 		cerca lo split point tra i figli che è il migliore
 		se manca lo split point allora vedere il migliore considerando anche tutti i figli
@@ -564,33 +619,19 @@ public:
 		caso 3.2 figlio dal vector e si mette come punto migliore così da non ribilanciare
 		*/
 
-		vector<Point<T>*> setOfSplitPoints;
-		vector<Point<T>*> splitPoints;
-		if(tmp->NE->SplitPoint != NULL)
-			setOfSplitPoints.push_back(tmp->NE->SplitPoint)
-		else
-			splitPoints.insert(splitPoints.end(), tmp->NE->listPoint.begin(), tmp->NE->listPoint.end());
-
-		if(tmp->SE->SplitPoint != NULL)
-			setOfSplitPoints.push_back(tmp->SE->SplitPoint)
-		else
-			splitPoints.insert(splitPoints.end(), tmp->SE->listPoint.begin(), tmp->SE->listPoint.end());
-
-		if(tmp->NW->SplitPoint != NULL)
-			setOfSplitPoints.push_back(tmp->NW->SplitPoint)
-		else
-			splitPoints.insert(splitPoints.end(), tmp->NW->listPoint.begin(), tmp->NW->listPoint.end());
-
-		if(tmp->SW->SplitPoint != NULL)
-			setOfSplitPoints.push_back(tmp->SW->SplitPoint)
-		else
-			splitPoints.insert(splitPoints.end(), tmp->SW->listPoint.begin(), tmp->SW->listPoint.end());
-
+		vector<Point<T>*> [setOfSplitPoints, splitPoints] = getVectorOfQuadtreePoint(fix); //TODO fix
+		
 		int indexSplitPoints;
-		if(setOfSplitPoints.size() != 0)
-			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints);
-		else if(setOfSplitPoints.size() == 1)
+		if(setOfSplitPoints.size() == 1) //put for avoid useless work from getBestPointPosition
 			indexSplitPoints = 0;
+		else if(setOfSplitPoints.size() >= 1 && setOfSplitPoints.size() < 4)
+			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints);
+		else if(setOfSplitPoints.size() == 0){
+			int indexPoint = getBestPointPosition(splitPoints.size(), splitPoints);
+			fix->SplitPoint = splitPoints[indexPoint];
+			//da continuare
+			return;
+		}
 		
 		splitPoints.push_back(setOfSplitPoints[indexSplitPoints]);
 	}
