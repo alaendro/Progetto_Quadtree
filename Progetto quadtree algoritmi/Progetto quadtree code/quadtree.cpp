@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iostream>
 #include <tuple>
+#include <climits>
 using namespace std;
 
 template <class T>
@@ -168,9 +169,10 @@ public:
 		}
 	}
 
-	NodePoint<T>* rebalance(NodePoint<T>* toRebalance){ //TOTEST
-		float avgX, avgY, validNode = 0;
-		NodePoint<T>* nodeArray = [toRebalance->NE, toRebalance->SE, toRebalance->NW, toRebalance->SW];
+	NodePoint<T>* getBalancedNode(NodePoint<T>* toRebalance){
+		float avgX, avgY, validNode = 0; 
+		NodePoint<T>* nodeArray[4] = {{toRebalance->NE}, {toRebalance->SE}, {toRebalance->NW}, {toRebalance->SW}};
+
 		for(int i = 0; i < 4; i++){
 			if(nodeArray[i] != NULL){
 				avgX += nodeArray[i]->point->x;
@@ -179,6 +181,9 @@ public:
 			}
 		}
 
+		if(validNode == 0)
+			return NULL;
+		
 		avgX = avgX / validNode;
 		avgY = avgY /validNode;
 
@@ -188,7 +193,7 @@ public:
 
 		for (int i = 0; i < 4; i++){
 			if(nodeArray[i] != NULL)
-				bestChoiceArray[i] = abs(toRebalance->nodeArray[i]->point->x - avgX) + abs(toRebalance->nodeArray[i]->point->y - avgY);
+				bestChoiceArray[i] = abs(nodeArray[i]->point->x - avgX) + abs(nodeArray[i]->point->y - avgY);
 		}
 
 		float min = bestChoiceArray[0];
@@ -202,10 +207,10 @@ public:
 		return nodeArray[index];
 	}
 
-	bool cancel(T x, T y) { //TOTEST
+	bool cancel(T x, T y) { //TOFIX - crea incosistenze nella struttura
 		Point<T> canceled(x, y);
 		NodePoint<T>* tmp = node;
-		while (tmp != NULL && tmp->point->isSamePoint(canceled) != true) { 
+		while (tmp != NULL && tmp->point->isSamePoint(canceled) != true) {
 			if (x >= tmp->point->x) { //the position is searched based on x, y coordinates
 				if (y >= tmp->point->y) {
 					tmp = tmp->NE;
@@ -227,8 +232,16 @@ public:
 			return false;
 		else { //delete the point and recompone the structure
 			//take the nearest point for avoid high unbalanced structure
-			NodePoint<T>* bestNode = rebalance(tmp);
-			bestNode->root = tmp->root;
+			NodePoint<T>* bestNode = getBalancedNode(tmp);
+
+			if(bestNode == NULL){
+				delete tmp;
+				return true;
+			}
+
+			bestNode->root = tmp->root; //avoids problems of unreachability, so the new node takes the old parent and the new position
+			//TOFIX la posizione deve essere sensata in base alla posizione sennò si possono avere cicli
+			//tutto sbagliato, da rivedere
 			if(tmp == tmp->root->NE){
 				tmp->root->NE = bestNode;
 			}
@@ -247,6 +260,7 @@ public:
 
 			x = bestNode->point->x;
 			y = bestNode->point->y;
+
 			if (x >= tmp->point->x) {
 				if (y >= tmp->point->y) {
 					bestNode->NE = tmp->NE;
@@ -263,6 +277,7 @@ public:
 					bestNode->SW = tmp->SW;
 				}
 			}
+
 			delete tmp;
 			return true;
 		}
@@ -290,11 +305,11 @@ public:
 			return false;
 	}
 
-	bool changeKey(string key, string new_key){ //TOTEST
+	bool changeKey(string old_key, string new_key){
 		queue<NodePoint<T>*> coda; //queue used to parse all nodes in branch order
 		coda.push(node);
 		NodePoint<T>* tmp = new NodePoint<T>();
-		while (tmp->aKey != key && coda.empty() != true) {
+		while (tmp->aKey != old_key && coda.empty() != true) {
 			tmp = coda.front();
 			coda.pop();
 			if (tmp->NE != NULL)
@@ -306,9 +321,10 @@ public:
 			if (tmp->SW != NULL)
 				coda.push(tmp->SW);
 		}
-		if (tmp->aKey == key)
+		if (tmp->aKey == old_key){
 			tmp->aKey = new_key;
 			return true;
+		}
 		else
 			return false;
 	}
@@ -316,7 +332,7 @@ public:
 	bool changePointKey(T x, T y, string new_key){ //TOTEST
 		Point<T> canceled(x, y);
 		NodePoint<T>* tmp = node;
-		while (tmp != NULL && tmp->aKey != key) { 
+		while (tmp != NULL) { 
 			if (x >= tmp->point->x) { //the position is searched based on x, y coordinates
 				if (y >= tmp->point->y) {
 					tmp = tmp->NE;
@@ -399,37 +415,37 @@ public:
 		return getBestPointPosition(fix->dim, fix->listPoint);
 	}
 
-	tuple<vector<Point<T>*>, vector<Point<T>*>> getVectorOfQuadtreePoint(NodePointList<T>* root){ //TOTEST
+	tuple<vector<Point<T>*>, vector<Point<T>*>> getVectorOfQuadtreePoint(NodePointList<T>* fix){ //TOTEST
 		vector<Point<T>*> setOfSplitPoints;
-		vector<Point<T>*> splitPoints;
+		vector<Point<T>*> vectorPoints;
 		if(fix->NE->SplitPoint != NULL)
 			setOfSplitPoints.push_back(fix->NE->SplitPoint);
 		else
-			splitPoints.insert(splitPoints.end(), fix->NE->listPoint.begin(), fix->NE->listPoint.end());
+			vectorPoints.insert(vectorPoints.end(), fix->NE->listPoint.begin(), fix->NE->listPoint.end());
 
 		if(fix->SE->SplitPoint != NULL)
 			setOfSplitPoints.push_back(fix->SE->SplitPoint);
 		else
-			splitPoints.insert(splitPoints.end(), fix->SE->listPoint.begin(), fix->SE->listPoint.end());
+			vectorPoints.insert(vectorPoints.end(), fix->SE->listPoint.begin(), fix->SE->listPoint.end());
 
 		if(fix->NW->SplitPoint != NULL)
 			setOfSplitPoints.push_back(fix->NW->SplitPoint);
 		else
-			splitPoints.insert(splitPoints.end(), fix->NW->listPoint.begin(), fix->NW->listPoint.end());
+			vectorPoints.insert(vectorPoints.end(), fix->NW->listPoint.begin(), fix->NW->listPoint.end());
 
 		if(fix->SW->SplitPoint != NULL)
 			setOfSplitPoints.push_back(fix->SW->SplitPoint);
 		else
-			splitPoints.insert(splitPoints.end(), fix->SW->listPoint.begin(), fix->SW->listPoint.end());
+			vectorPoints.insert(vectorPoints.end(), fix->SW->listPoint.begin(), fix->SW->listPoint.end());
 
-		return {setOfSplitPoints, splitPoints}; //TODO fix
+		return make_tuple(setOfSplitPoints, vectorPoints);
 	}
 
 	void checkIntegrity(NodePointList<T>* fix){
-		vector<Point<T>*> [setOfSplitPoints, splitPoints] = getVectorOfQuadtreePoint(fix);
+		auto [setOfSplitPoints, vectorPoints] = getVectorOfQuadtreePoint(fix); //tuple<vector<Point<T>*>>
 		vector<Point<T>*> allPoints;
 		allPoints.insert(allPoints.end(), setOfSplitPoints.begin(), setOfSplitPoints.end());
-		allPoints.insert(allPoints.end(), splitPoints.begin(), splitPoints.end());
+		allPoints.insert(allPoints.end(), vectorPoints.begin(), vectorPoints.end());
 
 		//TODO persistenza nel capire da dove provengono i punti, oppure ricreare?
 		for(int i = 0; i < allPoints.size(); i++){
@@ -450,7 +466,7 @@ public:
 				}
 			}
 		}
-		
+		//da continuare?
 	}	
 	
 	void Subdivide(NodePointList<T>* fix, Point<T>* to_ins) {
@@ -510,6 +526,13 @@ public:
 		}
 		
 	}
+
+	void addPoint(NodePointList<T>* tmp, Point<T>* to_ins){
+		if (tmp->listPoint.size() == tmp->dim) //if the node size reaches its maximum, a split point is created and the points are divided between new children
+			Subdivide(tmp, to_ins);
+		else
+			tmp->listPoint.push_back(to_ins);
+	}
 	
 	PointQuadtreeList<T>* insertPoint(T x, T y) {
 		NodePointList<T>* tmp = node;
@@ -532,10 +555,7 @@ public:
 				}
 			}
 		}
-		if (tmp->listPoint.size() == tmp->dim) //if the node size reaches its maximum, a split point is created and the points are divided between new children
-			Subdivide(tmp, to_ins);
-		else
-			tmp->listPoint.push_back(to_ins);
+		addPoint(tmp, to_ins);
 		return this;
 	}
 
@@ -619,21 +639,41 @@ public:
 		caso 3.2 figlio dal vector e si mette come punto migliore così da non ribilanciare
 		*/
 
-		vector<Point<T>*> [setOfSplitPoints, splitPoints] = getVectorOfQuadtreePoint(fix); //TODO fix
+		auto [setOfSplitPoints, vectorPoints] = getVectorOfQuadtreePoint(fix); //tuple<vector<Point<T>*>>
 		
 		int indexSplitPoints;
-		if(setOfSplitPoints.size() == 1) //put for avoid useless work from getBestPointPosition
+		if(setOfSplitPoints.size() == 0){
+			int indexPoint = getBestPointPosition(vectorPoints.size(), vectorPoints);
+			fix->SplitPoint = vectorPoints[indexPoint];
+
+			for(int i = 0; i < (vectorPoints.size()-1); i++){
+				if (fix->SplitPoint->x >= vectorPoints[i]->x) {
+					if (fix->SplitPoint->y >= vectorPoints[i]->y) {
+						addPoint(fix->NE, vectorPoints[i]);
+					}
+					else {
+						addPoint(fix->SE, vectorPoints[i]);
+					}
+				}
+				else {
+					if (fix->SplitPoint->y >= vectorPoints[i]->y) {
+						addPoint(fix->NW, vectorPoints[i]);
+					}
+					else {
+						addPoint(fix->SW, vectorPoints[i]);
+					}
+				}
+			}
+			return;
+		}
+		else if(setOfSplitPoints.size() == 1) //put for avoid useless work from getBestPointPosition
 			indexSplitPoints = 0;
 		else if(setOfSplitPoints.size() >= 1 && setOfSplitPoints.size() < 4)
 			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints);
-		else if(setOfSplitPoints.size() == 0){
-			int indexPoint = getBestPointPosition(splitPoints.size(), splitPoints);
-			fix->SplitPoint = splitPoints[indexPoint];
-			//da continuare
-			return;
-		}
 		
-		splitPoints.push_back(setOfSplitPoints[indexSplitPoints]);
+		//da continuare, prendere spunto dalla metodologia del caso con size == 0
+		//ricordarsi di usare Subdivide() in caso e checkIntegrity ?
+		vectorPoints.push_back(setOfSplitPoints[indexSplitPoints]);
 	}
 
 	bool cancel(T x, T y){
@@ -642,7 +682,7 @@ public:
 		bool samePoint = false;
 		while (tmp->SplitPoint != NULL) { //the child position is searched based on x, y coordinates
 			if (tmp->SplitPoint->isSamePoint(canceled)){
-				samePoint = true
+				samePoint = true;
 				break;
 			}
 			if (x >= tmp->SplitPoint->x) {
@@ -666,6 +706,8 @@ public:
 			return false;
 		else{
 			subdivideErase(tmp);
+			delete tmp;
+			return true;
 		}
 	}
 	//TODO si può chiamare la subdivideErase() che permette di cancellare split point e che viene richiamata ricorsivamente nel caso il nuovo split point fa da split point per un sotto quadtree

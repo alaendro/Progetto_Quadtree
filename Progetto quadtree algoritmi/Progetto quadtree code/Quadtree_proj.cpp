@@ -10,7 +10,7 @@ int main() {
 	pq->insertPoint(13, 30, "m")->insertPoint(0, 5, "rhe")->insertPoint(99, 12, "kel");
 	pq->insertPoint(90, 43, "la")->insertPoint(9, 3, "jj")->insertPoint(14, 15, "kaj")->insertPoint(10, 2, "r");
 	pq->insertPoint(3, 1, "p")->insertPoint(-5, -10, "ko")->insertPoint(-10, -9, "jr")->insertPoint(90, -1, "r");
-	pq->insertPoint(302, -35, "ppppp")->insertPoint(3910, -1038, "jra")->insertPoint(193, -1093, "eh");
+	pq->insertPoint(302, -35, "ppppp")->insertPoint(3910, -1038, "jra")->insertPoint(193, -1093, "eh")->insertPoint(1956, -120, "lol");
 
 	bool keysearch = pq->keyPresence("op");
 	if (keysearch == true)
@@ -24,17 +24,23 @@ int main() {
 	else
 		cout << "key = oplie not found" << endl;
 
-	bool canc = pq->cancel(30, 30);
+	bool canc = pq->cancelLeaf(30, 30);
 	if (canc == true)
 		cout << "(30, 30) found and deleted" << endl;
 	else
 		cout << "(30, 30) not found, or split point node" << endl;
 
-	bool canc2 = pq->cancel(193, -1093);
+	bool canc2 = pq->cancelLeaf(193, -1093);
 	if (canc2 == true)
 		cout << "(193, -1093) found and deleted" << endl;
 	else
 		cout << "(193, -1093) not found, or split point node" << endl;
+
+	bool canc3 = pq->cancel(20, 30);
+	if (canc3 == true)
+		cout << "(20, 30) found and deleted" << endl;
+	else
+		cout << "(20, 30) not found, or split point node" << endl;
 
 	bool look = pq->search(10, 15);
 	if (look == true)
@@ -47,6 +53,30 @@ int main() {
 		cout << "(11, 15) found" << endl;
 	else
 		cout << "(11, 15) not found" << endl;
+
+	bool changekey1 = pq->changeKey("rhe", "ehr");
+	if (changekey1 == true)
+		cout << "rhe found and changed in ehr" << endl;
+	else
+		cout << "rhe not found" << endl;
+
+	bool changekey2 = pq->changeKey("plplplpl", "sium");
+	if (changekey2 == true)
+		cout << "plplplpl found and changed in sium" << endl;
+	else
+		cout << "plplplpl not found" << endl;
+	
+	bool changepointkey1 = pq->changePointKey(3, 1, "new_key_on_point");
+	if (changepointkey1 == true)
+		cout << "(3, 1) found and changed key" << endl;
+	else
+		cout << "(3, 1) not found" << endl;
+
+	bool changepointkey2 = pq->changePointKey(9, 19, "new_key_on_point");
+	if (changepointkey2 == true)
+		cout << "(9, 19) found and changed key" << endl;
+	else
+		cout << "(9, 19) not found" << endl;
 
 
 	cout << "\nPointQuadtreeList" << endl;
