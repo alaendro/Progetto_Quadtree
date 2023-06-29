@@ -375,6 +375,7 @@ public:
 	Point<T>* SplitPoint = NULL;
 	int dim = 10; //TODO fare dei test per vedere quale è la dimensione ottimale
 
+	NodePointList<T>* root = NULL; 
 	NodePointList<T>* NW = NULL;
 	NodePointList<T>* NE = NULL;
 	NodePointList<T>* SW = NULL;
@@ -509,30 +510,28 @@ public:
 			}
 		}
 
-		if(to_ins != NULL){
-			if (to_ins->x >= fix->SplitPoint->x) { //the point that triggered the subdivide and has to be inserted
-				if (to_ins->y >= fix->SplitPoint->y) {
-					fix->NE->listPoint.push_back(to_ins);
-				}
-				else {
-					fix->SE->listPoint.push_back(to_ins);
-				}
+		if (to_ins->x >= fix->SplitPoint->x) { //the point that triggered the subdivide and has to be inserted
+			if (to_ins->y >= fix->SplitPoint->y) {
+				fix->NE->listPoint.push_back(to_ins);
 			}
 			else {
-				if (to_ins->y >= fix->SplitPoint->y) {
-					fix->NW->listPoint.push_back(to_ins);
-				}
-				else {
-					fix->SW->listPoint.push_back(to_ins);
-				}
+				fix->SE->listPoint.push_back(to_ins);
 			}
-	//		cout << "SplitPoint " << fix->SplitPoint->x << " " << fix->SplitPoint->y << endl;
-			fix->listPoint.clear();
 		}
-		else{
-			//TODO per subdivide erase
+		else {
+			if (to_ins->y >= fix->SplitPoint->y) {
+				fix->NW->listPoint.push_back(to_ins);
+			}
+			else {
+				fix->SW->listPoint.push_back(to_ins);
+			}
 		}
-		
+
+		fix->NE->root = fix;
+		fix->NW->root = fix;
+		fix->SE->root = fix;
+		fix->SW->root = fix;
+		fix->listPoint.clear();
 	}
 
 	void addPoint(NodePointList<T>* tmp, Point<T>* to_ins){
@@ -650,34 +649,45 @@ public:
 		auto [setOfSplitPoints, vectorPoints] = getVectorOfQuadtreePoint(fix); //tuple<vector<Point<T>*>>
 		
 		int indexSplitPoints;
-		if(setOfSplitPoints.size() == 0){
+		if(setOfSplitPoints.size() == 0){ //it means that there are only leafs
 			int indexPoint = getBestPointPosition(vectorPoints.size(), vectorPoints);
-			fix->SplitPoint = vectorPoints[indexPoint];
-
+			NodePointList<T>* new_node = new NodePointList<T>()
+			new_node->SplitPoint = vectorPoints[indexPoint];
+			
 			for(int i = 0; i < (vectorPoints.size()-1); i++){
-				if (fix->SplitPoint->x >= vectorPoints[i]->x) {
-					if (fix->SplitPoint->y >= vectorPoints[i]->y) {
-						addPoint(fix->NE, vectorPoints[i]);
+				if (new_node->SplitPoint->x >= vectorPoints[i]->x) {
+					if (new_node->SplitPoint->y >= vectorPoints[i]->y) {
+						addPoint(new_node->NE, vectorPoints[i]);
 					}
 					else {
-						addPoint(fix->SE, vectorPoints[i]);
+						addPoint(new_node->SE, vectorPoints[i]);
 					}
 				}
 				else {
-					if (fix->SplitPoint->y >= vectorPoints[i]->y) {
-						addPoint(fix->NW, vectorPoints[i]);
+					if (new_node->SplitPoint->y >= vectorPoints[i]->y) {
+						addPoint(new_node->NW, vectorPoints[i]);
 					}
 					else {
-						addPoint(fix->SW, vectorPoints[i]);
+						addPoint(new_node->SW, vectorPoints[i]);
 					}
 				}
 			}
 			return;
 		}
-		else if(setOfSplitPoints.size() == 1) //put for avoid useless work from getBestPointPosition
+		else if(setOfSplitPoints.size() == 1) //put it for avoid useless work from getBestPointPosition
 			indexSplitPoints = 0;
-		else if(setOfSplitPoints.size() >= 1 && setOfSplitPoints.size() < 4)
+		else if(setOfSplitPoints.size() > 1 && setOfSplitPoints.size() < 4)
 			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints);
+		else if(setOfSplitPoints.size() == 4){
+			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints); //NE - SE - NW - SW
+			
+			//gestire i figli visto che sono splitpoint con i root
+			//creare metodo che gestisce un nodo figlio che è splitpoint 
+		}
+		else{
+			cout << "error in cancel" << endl;
+			return;
+		}
 		
 		//da continuare, prendere spunto dalla metodologia del caso con size == 0
 		//ricordarsi di usare Subdivide() in caso e checkIntegrity ?
