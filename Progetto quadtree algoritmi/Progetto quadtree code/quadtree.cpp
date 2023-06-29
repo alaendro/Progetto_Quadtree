@@ -169,7 +169,7 @@ public:
 		}
 	}
 
-	NodePoint<T>* getBalancedNode(NodePoint<T>* toRebalance){
+	NodePoint<T>* getBalancedNode(NodePoint<T>* toRebalance){ //take the children's node, which of all is the most balanced
 		float avgX, avgY, validNode = 0; 
 		NodePoint<T>* nodeArray[4] = {{toRebalance->NE}, {toRebalance->SE}, {toRebalance->NW}, {toRebalance->SW}};
 
@@ -181,7 +181,7 @@ public:
 			}
 		}
 
-		if(validNode == 0)
+		if(validNode == 0) //it means that the node is a leaf
 			return NULL;
 		
 		avgX = avgX / validNode;
@@ -193,7 +193,7 @@ public:
 
 		for (int i = 0; i < 4; i++){
 			if(nodeArray[i] != NULL)
-				bestChoiceArray[i] = abs(nodeArray[i]->point->x - avgX) + abs(nodeArray[i]->point->y - avgY);
+				bestChoiceArray[i] = abs(toRebalance->point->x - abs(nodeArray[i]->point->x - avgX)) + abs(toRebalance->point->y - abs(nodeArray[i]->point->y - avgY));
 		}
 
 		float min = bestChoiceArray[0];
@@ -207,7 +207,7 @@ public:
 		return nodeArray[index];
 	}
 
-	bool cancel(T x, T y) { //TOFIX - crea incosistenze nella struttura
+	bool cancel(T x, T y) {
 		Point<T> canceled(x, y);
 		NodePoint<T>* tmp = node;
 		while (tmp != NULL && tmp->point->isSamePoint(canceled) != true) {
@@ -234,14 +234,42 @@ public:
 			//take the nearest point for avoid high unbalanced structure
 			NodePoint<T>* bestNode = getBalancedNode(tmp);
 
-			if(bestNode == NULL){
+			if(bestNode == NULL){ //it's a leaf node
 				delete tmp;
 				return true;
 			}
 
 			bestNode->root = tmp->root; //avoids problems of unreachability, so the new node takes the old parent and the new position
-			//TOFIX la posizione deve essere sensata in base alla posizione sennò si possono avere cicli
-			//tutto sbagliato, da rivedere
+
+			//handling the childs positions
+			NodePoint<T>* nodeArray[4] = {{tmp->NE}, {tmp->SE}, {tmp->NW}, {tmp->SW}};
+
+			for(int i = 0; i < 4; i++){
+				if(nodeArray[i] == NULL)
+					continue;
+				else if(nodeArray[i] == bestNode)
+					continue;
+
+				if (bestNode->point->x >= tmp->point->x) {
+					if (bestNode->point->y >= tmp->point->y) {
+						bestNode->NE = nodeArray[i];
+					}
+					else {
+						bestNode->SE = nodeArray[i];
+					}
+				}
+				else {
+					if (bestNode->point->y >= tmp->point->y) {
+						bestNode->NW = nodeArray[i];
+					}
+					else {
+						bestNode->SW = nodeArray[i];
+					}
+				}
+				nodeArray[i]->root = bestNode;
+			}
+
+			//handling the position from the root pov
 			if(tmp == tmp->root->NE){
 				tmp->root->NE = bestNode;
 			}
@@ -256,26 +284,6 @@ public:
 			}
 			else{ //unexepted error
 				return false;
-			}
-
-			x = bestNode->point->x;
-			y = bestNode->point->y;
-
-			if (x >= tmp->point->x) {
-				if (y >= tmp->point->y) {
-					bestNode->NE = tmp->NE;
-				}
-				else {
-					bestNode->SE = tmp->SE;
-				}
-			}
-			else {
-				if (y >= tmp->point->y) {
-					bestNode->NW = tmp->NW;
-				}
-				else {
-					bestNode->SW = tmp->SW;
-				}
 			}
 
 			delete tmp;
@@ -329,10 +337,10 @@ public:
 			return false;
 	}
 
-	bool changePointKey(T x, T y, string new_key){ //TOTEST
-		Point<T> canceled(x, y);
+	bool changePointKey(T x, T y, string new_key){
+		Point<T> point_to_found(x, y);
 		NodePoint<T>* tmp = node;
-		while (tmp != NULL) { 
+		while (tmp != NULL && !(tmp->point->isSamePoint(point_to_found))) { 
 			if (x >= tmp->point->x) { //the position is searched based on x, y coordinates
 				if (y >= tmp->point->y) {
 					tmp = tmp->NE;
