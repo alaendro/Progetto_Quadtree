@@ -628,7 +628,72 @@ public:
 		return false;
 	}
 
-	void subdivideErase(NodePointList<T>* fix){ //TODO
+	void handleSplitPointPositions(NodePointList<T>* fix, NodePointList<T>* bestNode){ //TOTEST
+		if(fix == fix->root->NE){
+			fix->root->NE = bestNode;
+		}
+		else if(fix == fix->root->SE){
+			fix->root->SE = bestNode;
+		}
+		else if(fix == fix->root->NW){
+			fix->root->NW = bestNode;
+		}
+		else if(fix == fix->root->SW){
+			fix->root->SW = bestNode;
+		}
+
+		NodePointList<T>* nodeArray[4] = {{fix->NE}, {fix->SE}, {fix->NW}, {fix->SW}};
+
+		for(int i = 0; i < 4; i++){
+			if(nodeArray[i] == bestNode || nodeArray[i] == NULL)
+				continue;
+
+			if (bestNode->SplitPoint->x >= fix->SplitPoint->x) {
+				if (bestNode->SplitPoint->y >= fix->SplitPoint->y) {
+					bestNode->NE = nodeArray[i];
+				}
+				else {
+					bestNode->SE = nodeArray[i];
+				}
+			}
+			else {
+				if (bestNode->SplitPoint->y >= fix->SplitPoint->y) {
+					bestNode->NW = nodeArray[i];
+				}
+				else {
+					bestNode->SW = nodeArray[i];
+				}
+			}
+			nodeArray[i]->root = bestNode;
+		}
+	}
+
+	void redistributeVectorPoints(NodePointList<T>* bestNode, vector<Point<T>*> vectorPoints){ //TOTEST
+		bestNode->NE->listPoint.clear();
+		bestNode->SE->listPoint.clear();
+		bestNode->NW->listPoint.clear();
+		bestNode->SW->listPoint.clear();
+		for(int i = 0; i < (vectorPoints.size()-1); i++){
+			if (bestNode->SplitPoint->x >= vectorPoints[i]->x) {
+				if (bestNode->SplitPoint->y >= vectorPoints[i]->y) {
+					addPoint(bestNode->NE, vectorPoints[i]);
+				}
+				else {
+					addPoint(bestNode->SE, vectorPoints[i]);
+				}
+			}
+			else {
+				if (bestNode->SplitPoint->y >= vectorPoints[i]->y) {
+					addPoint(bestNode->NW, vectorPoints[i]);
+				}
+				else {
+					addPoint(bestNode->SW, vectorPoints[i]);
+				}
+			}
+		}
+	}
+
+	void subdivideErase(NodePointList<T>* fix){ //TOTEST
 		/*
 		cerca lo split point tra i figli che è il migliore
 		se manca lo split point allora vedere il migliore considerando anche tutti i figli
@@ -654,44 +719,19 @@ public:
 			NodePointList<T>* new_node = new NodePointList<T>()
 			new_node->SplitPoint = vectorPoints[indexPoint];
 			
-			for(int i = 0; i < (vectorPoints.size()-1); i++){
-				if (new_node->SplitPoint->x >= vectorPoints[i]->x) {
-					if (new_node->SplitPoint->y >= vectorPoints[i]->y) {
-						addPoint(new_node->NE, vectorPoints[i]);
-					}
-					else {
-						addPoint(new_node->SE, vectorPoints[i]);
-					}
-				}
-				else {
-					if (new_node->SplitPoint->y >= vectorPoints[i]->y) {
-						addPoint(new_node->NW, vectorPoints[i]);
-					}
-					else {
-						addPoint(new_node->SW, vectorPoints[i]);
-					}
-				}
-			}
-			return;
+			redistributeVectorPoints(new_node, vectorPoints);
 		}
-		else if(setOfSplitPoints.size() == 1) //put it for avoid useless work from getBestPointPosition
-			indexSplitPoints = 0;
-		else if(setOfSplitPoints.size() > 1 && setOfSplitPoints.size() < 4)
-			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints);
-		else if(setOfSplitPoints.size() == 4){
+		else if(setOfSplitPoints.size() >= 1 && setOfSplitPoints.size() <= 4){
 			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints); //NE - SE - NW - SW
-			
-			//gestire i figli visto che sono splitpoint con i root
-			//creare metodo che gestisce un nodo figlio che è splitpoint 
+			NodePointList<T>* bestNode = setOfSplitPoints[indexSplitPoints];
+
+			handleSplitPointPositions(fix, bestNode);
+			redistributeVectorPoints(bestNode, vectorPoints);
 		}
 		else{
 			cout << "error in cancel" << endl;
-			return;
 		}
-		
-		//da continuare, prendere spunto dalla metodologia del caso con size == 0
-		//ricordarsi di usare Subdivide() in caso e checkIntegrity ?
-		vectorPoints.push_back(setOfSplitPoints[indexSplitPoints]);
+
 	}
 
 	bool cancel(T x, T y){
