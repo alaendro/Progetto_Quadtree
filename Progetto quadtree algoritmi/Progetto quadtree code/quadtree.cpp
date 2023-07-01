@@ -669,6 +669,7 @@ public:
 	}
 
 	void redistributeVectorPoints(NodePointList<T>* bestNode, vector<Point<T>*> vectorPoints){ //TOTEST
+		//bug on clear, vector bestNode->NE->listPoint initialized with errors TOFIX
 		bestNode->NE->listPoint.clear();
 		bestNode->SE->listPoint.clear();
 		bestNode->NW->listPoint.clear();
@@ -716,14 +717,15 @@ public:
 		int indexSplitPoints;
 		if(setOfSplitPoints.size() == 0){ //it means that there are only leafs
 			int indexPoint = getBestPointPosition(vectorPoints.size(), vectorPoints);
-			NodePointList<T>* new_node = new NodePointList<T>()
+			NodePointList<T>* new_node = new NodePointList<T>();
 			new_node->SplitPoint = vectorPoints[indexPoint];
 			
 			redistributeVectorPoints(new_node, vectorPoints);
 		}
 		else if(setOfSplitPoints.size() >= 1 && setOfSplitPoints.size() <= 4){
 			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints); //NE - SE - NW - SW
-			NodePointList<T>* bestNode = setOfSplitPoints[indexSplitPoints];
+			NodePointList<T>* bestNode;
+			bestNode->SplitPoint = setOfSplitPoints[indexSplitPoints];
 
 			handleSplitPointPositions(fix, bestNode);
 			redistributeVectorPoints(bestNode, vectorPoints);

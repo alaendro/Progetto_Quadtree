@@ -86,19 +86,19 @@ int main() {
 	pql->insertPoint(-4, 7)->insertPoint(-10, -20)->insertPoint(56, -10)->insertPoint(-13, -20);
 	pql->insertPoint(-1, -2)->insertPoint(-19, -18)->insertPoint(-20, -1)->insertPoint(-111, 0);
 
-	bool cancpql = pql->cancel(30, 10);
+	bool cancpql = pql->cancelOnLeaf(30, 10);
 	if (cancpql == true)
 		cout << "(30, 10) found and deleted" << endl;
 	else
 		cout << "(30, 10) not found, or split point node" << endl;
 
-	bool cancpql2 = pql->cancel(350, 10); 
+	bool cancpql2 = pql->cancelOnLeaf(350, 10); 
 	if (cancpql2 == true)
 		cout << "(350, 10) found" << endl;
 	else
 		cout << "(350, 10) not found, or split point node" << endl;
 
-	bool cancpql3 = pql->cancel(12, 19); //Split Point
+	bool cancpql3 = pql->cancelOnLeaf(12, 19); //Split Point
 	if (cancpql3 == true)
 		cout << "(12, 19) found" << endl;
 	else
@@ -115,6 +115,12 @@ int main() {
 		cout << "(560, -10) found" << endl;
 	else
 		cout << "(560, -10) not found" << endl;
+
+	bool canc1 = pql->cancel(12, 19); 
+	if (cancpql3 == true)
+		cout << "(12, 19) found" << endl;
+	else
+		cout << "(12, 19) not found" << endl;
 
 	bool lookpql3 = pql->search(12, 19); //Split Point
 	if (lookpql3 == true)
