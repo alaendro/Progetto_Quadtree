@@ -669,11 +669,14 @@ public:
 	}
 
 	void redistributeVectorPoints(NodePointList<T>* bestNode, vector<Point<T>*> vectorPoints){ //TOTEST
-		//bug on clear, vector bestNode->NE->listPoint initialized with errors TOFIX
+		//bestNode contains only a point inside
+		/*
 		bestNode->NE->listPoint.clear();
 		bestNode->SE->listPoint.clear();
 		bestNode->NW->listPoint.clear();
 		bestNode->SW->listPoint.clear();
+		*/
+
 		for(int i = 0; i < (vectorPoints.size()-1); i++){
 			if (bestNode->SplitPoint->x >= vectorPoints[i]->x) {
 				if (bestNode->SplitPoint->y >= vectorPoints[i]->y) {
@@ -694,7 +697,7 @@ public:
 		}
 	}
 
-	void subdivideErase(NodePointList<T>* fix){ //TOTEST
+	void subdivideErase(NodePointList<T>* fix){ //TOTEST TOFIX non si cancella correttamente
 		/*
 		cerca lo split point tra i figli che è il migliore
 		se manca lo split point allora vedere il migliore considerando anche tutti i figli
@@ -719,13 +722,21 @@ public:
 			int indexPoint = getBestPointPosition(vectorPoints.size(), vectorPoints);
 			NodePointList<T>* new_node = new NodePointList<T>();
 			new_node->SplitPoint = vectorPoints[indexPoint];
-			
+			new_node->NE = new NodePointList<T>();
+			new_node->SE = new NodePointList<T>();
+			new_node->NW = new NodePointList<T>();
+			new_node->SW = new NodePointList<T>();
+
 			redistributeVectorPoints(new_node, vectorPoints);
 		}
 		else if(setOfSplitPoints.size() >= 1 && setOfSplitPoints.size() <= 4){
 			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints); //NE - SE - NW - SW
-			NodePointList<T>* bestNode;
+			NodePointList<T>* bestNode = new NodePointList<T>();
 			bestNode->SplitPoint = setOfSplitPoints[indexSplitPoints];
+			bestNode->NE = new NodePointList<T>();
+			bestNode->SE = new NodePointList<T>();
+			bestNode->NW = new NodePointList<T>();
+			bestNode->SW = new NodePointList<T>();
 
 			handleSplitPointPositions(fix, bestNode);
 			redistributeVectorPoints(bestNode, vectorPoints);

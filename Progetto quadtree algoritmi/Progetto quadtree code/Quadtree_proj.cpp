@@ -104,27 +104,27 @@ int main() {
 	else
 		cout << "(12, 19) not found, or split point node" << endl;
 
-	bool lookpql = pql->search(56, -10);
+	bool lookpql = pql->search(30, 10);
 	if (lookpql == true)
+		cout << "(30, 10) found" << endl;
+	else
+		cout << "(30, 10) not found" << endl;
+
+	bool lookpql2 = pql->search(56, -10);
+	if (lookpql2 == true)
 		cout << "(56, -10) found" << endl;
 	else
 		cout << "(56, -10) not found" << endl;
 
-	bool lookpql2 = pql->search(560, -10);
-	if (lookpql2 == true)
-		cout << "(560, -10) found" << endl;
-	else
-		cout << "(560, -10) not found" << endl;
-
 	bool canc1 = pql->cancel(12, 19); 
-	if (cancpql3 == true)
-		cout << "(12, 19) found" << endl;
+	if (canc1 == true)
+		cout << "(12, 19) found in cancel" << endl;
 	else
-		cout << "(12, 19) not found" << endl;
+		cout << "(12, 19) not found in cancel" << endl;
 
 	bool lookpql3 = pql->search(12, 19); //Split Point
 	if (lookpql3 == true)
-		cout << "(12, 19) found" << endl;
+		cout << "(12, 19) found in search" << endl;
 	else
-		cout << "(12, 19) not found" << endl;
+		cout << "(12, 19) not found in search" << endl;
 }
