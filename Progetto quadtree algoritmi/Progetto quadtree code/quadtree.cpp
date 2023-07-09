@@ -427,23 +427,39 @@ public:
 	tuple<vector<Point<T>*>, vector<Point<T>*>> getVectorOfQuadtreePoint(NodePointList<T>* fix){ //TOTEST
 		vector<Point<T>*> setOfSplitPoints;
 		vector<Point<T>*> vectorPoints;
-		if(fix->NE->SplitPoint != NULL)
+		if(fix->NE->SplitPoint != NULL){
 			setOfSplitPoints.push_back(fix->NE->SplitPoint);
+			auto [setOfSplitPointsRec, vectorPointsRec] = getVectorOfQuadtreePoint(fix->NE);
+			vectorPoints.insert(vectorPoints.end(), vectorPointsRec.begin(), vectorPointsRec.end());
+			setOfSplitPoints.insert(setOfSplitPoints.end(), setOfSplitPointsRec.begin(), setOfSplitPointsRec.end());
+		}
 		else
 			vectorPoints.insert(vectorPoints.end(), fix->NE->listPoint.begin(), fix->NE->listPoint.end());
 
-		if(fix->SE->SplitPoint != NULL)
+		if(fix->SE->SplitPoint != NULL){
 			setOfSplitPoints.push_back(fix->SE->SplitPoint);
+			auto [setOfSplitPointsRec, vectorPointsRec] = getVectorOfQuadtreePoint(fix->SE);
+			vectorPoints.insert(vectorPoints.end(), vectorPointsRec.begin(), vectorPointsRec.end());
+			setOfSplitPoints.insert(setOfSplitPoints.end(), setOfSplitPointsRec.begin(), setOfSplitPointsRec.end());
+		}
 		else
 			vectorPoints.insert(vectorPoints.end(), fix->SE->listPoint.begin(), fix->SE->listPoint.end());
 
-		if(fix->NW->SplitPoint != NULL)
+		if(fix->NW->SplitPoint != NULL){
 			setOfSplitPoints.push_back(fix->NW->SplitPoint);
+			auto [setOfSplitPointsRec, vectorPointsRec] = getVectorOfQuadtreePoint(fix->NW);
+			vectorPoints.insert(vectorPoints.end(), vectorPointsRec.begin(), vectorPointsRec.end());
+			setOfSplitPoints.insert(setOfSplitPoints.end(), setOfSplitPointsRec.begin(), setOfSplitPointsRec.end());
+		}
 		else
 			vectorPoints.insert(vectorPoints.end(), fix->NW->listPoint.begin(), fix->NW->listPoint.end());
 
-		if(fix->SW->SplitPoint != NULL)
+		if(fix->SW->SplitPoint != NULL){
 			setOfSplitPoints.push_back(fix->SW->SplitPoint);
+			auto [setOfSplitPointsRec, vectorPointsRec] = getVectorOfQuadtreePoint(fix->SW);
+			vectorPoints.insert(vectorPoints.end(), vectorPointsRec.begin(), vectorPointsRec.end());
+			setOfSplitPoints.insert(setOfSplitPoints.end(), setOfSplitPointsRec.begin(), setOfSplitPointsRec.end());
+		}
 		else
 			vectorPoints.insert(vectorPoints.end(), fix->SW->listPoint.begin(), fix->SW->listPoint.end());
 
@@ -456,11 +472,11 @@ public:
 		allPoints.insert(allPoints.end(), setOfSplitPoints.begin(), setOfSplitPoints.end());
 		allPoints.insert(allPoints.end(), vectorPoints.begin(), vectorPoints.end());
 
-		//TODO persistenza nel capire da dove provengono i punti, oppure ricreare?
+		//TODO ha senso farla?
 		for(int i = 0; i < allPoints.size(); i++){
 			if (allPoints[i].x >= fix->SplitPoint->x) { 
 				if (allPoints[i].y >= fix->SplitPoint->y) {
-					fix = fix->NE;
+					addPoint(fix->NE, allPoints[i]);
 				}
 				else {
 					fix = fix->SE;
@@ -595,6 +611,16 @@ public:
 		}
 		return false;
 	}
+
+	bool cancelInsideVector(NodePointList<T>* tmp, Point<T> canceled){
+		for (unsigned int i = 0; i < tmp->listPoint.size(); i++) { //check if the point it's inside the last node
+			if (tmp->listPoint[i]->isSamePoint(canceled) == true) {
+				tmp->listPoint.erase(tmp->listPoint.begin() + i);
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	bool cancelOnLeaf(T x, T y) {
 		NodePointList<T>* tmp = node;
@@ -619,16 +645,13 @@ public:
 				}
 			}
 		}
-		for (unsigned int i = 0; i < tmp->listPoint.size(); i++) { //check if the point it's inside the last node
-			if (tmp->listPoint[i]->isSamePoint(canceled) == true) {
-				tmp->listPoint.erase(tmp->listPoint.begin() + i);
-				return true;
-			}
-		}
-		return false;
+		return cancelInsideVector(tmp, canceled);
 	}
 
 	void handleSplitPointPositions(NodePointList<T>* fix, NodePointList<T>* bestNode){ //TOTEST
+		/*
+			bestnode takes sons and father from the node that will be deleted
+		*/
 		if(fix == fix->root->NE){
 			fix->root->NE = bestNode;
 		}
@@ -669,6 +692,10 @@ public:
 	}
 
 	void redistributeVectorPoints(NodePointList<T>* bestNode, vector<Point<T>*> vectorPoints){ //TOTEST
+		/*
+			points from all the vector are reinsert
+		*/
+
 		//bestNode contains only a point inside
 		/*
 		bestNode->NE->listPoint.clear();
@@ -700,19 +727,13 @@ public:
 	void subdivideErase(NodePointList<T>* fix){ //TOTEST TOFIX non si cancella correttamente
 		/*
 		cerca lo split point tra i figli che è il migliore
-		se manca lo split point allora vedere il migliore considerando anche tutti i figli
-		per splint point che hanno sotto altri split point bisogna gestire ricorsivamente la subdivide()
-		cioè si punta ad avere un caso in cui gli unici punti interessati sono punti non di splitpoint in cui si fa la subdivide()
-		a quel punto di potrebbe sfruttare la semplice subdivide() gestendo il caso del punto == null
 
 		caso 1
-		tutti figli sono splitpoint -> si cerca tra quelli e si fa ricorsivamente la subdivide
+		tutti figli sono splitpoint -> si cerca tra quelli e si ribilancia adeguatamente
 		caso 2
-		tutti i figli sono vector -> si cerca tra quelli, si toglie dalla lista e si mette come punto migliore così da non ribilanciare
+		tutti i figli sono vector -> si cerca tra quelli, si toglie dalla lista e si ribilancia attorno a quel punto
 		caso 3
-		ci sono figli vector e splitpoint -> prendere il migliore degli split point e considerarlo insieme ai vector
-		caso 3.1 figlio splitpoint allora si fa ricorsivamente la subdivide
-		caso 3.2 figlio dal vector e si mette come punto migliore così da non ribilanciare
+		ci sono figli vector e splitpoint -> prendere il migliore degli split point e ribilanciare tutti insieme ai vector
 		*/
 
 		auto [setOfSplitPoints, vectorPoints] = getVectorOfQuadtreePoint(fix); //tuple<vector<Point<T>*>>
@@ -727,7 +748,13 @@ public:
 			new_node->NW = new NodePointList<T>();
 			new_node->SW = new NodePointList<T>();
 
+			if(new_node->root != NULL){
+				handleSplitPointPositions(fix, new_node);
+			}
 			redistributeVectorPoints(new_node, vectorPoints);
+			if(fix == node){
+				node = new_node;
+			}
 		}
 		else if(setOfSplitPoints.size() >= 1 && setOfSplitPoints.size() <= 4){
 			indexSplitPoints = getBestPointPosition(setOfSplitPoints.size(), setOfSplitPoints); //NE - SE - NW - SW
@@ -740,11 +767,27 @@ public:
 
 			handleSplitPointPositions(fix, bestNode);
 			redistributeVectorPoints(bestNode, vectorPoints);
+			if(fix == node){
+				node = bestNode;
+			}
 		}
 		else{
 			cout << "error in cancel" << endl;
 		}
 
+	}
+
+	void deleteQuadtree(NodePointList<T>* toDelete){
+		if(toDelete == NULL)
+			return;
+		else{
+			delete toDelete->listPoint;
+			delete toDelete;
+			deleteQuadtree(toDelete->NE);
+			deleteQuadtree(toDelete->SE);
+			deleteQuadtree(toDelete->NW);
+			deleteQuadtree(toDelete->SW);
+		}
 	}
 
 	bool cancel(T x, T y){
@@ -773,13 +816,13 @@ public:
 				}
 			}
 		}
-		if(samePoint == false)
-			return false;
+		if(samePoint == false){
+			return cancelInsideVector(tmp, canceled);
+		}
 		else{
 			subdivideErase(tmp);
-			delete tmp;
+			deleteQuadtree(tmp);
 			return true;
 		}
 	}
-	//TODO si può chiamare la subdivideErase() che permette di cancellare split point e che viene richiamata ricorsivamente nel caso il nuovo split point fa da split point per un sotto quadtree
 };

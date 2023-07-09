@@ -127,4 +127,32 @@ int main() {
 		cout << "(12, 19) found in search" << endl;
 	else
 		cout << "(12, 19) not found in search" << endl;
+
+	pql->insertPoint(14, 130)->insertPoint(31, 93)->insertPoint(340, 120)->insertPoint(95, 0);
+	pql->insertPoint(220, 16)->insertPoint(16, 3)->insertPoint(11, 1)->insertPoint(80, 8);
+	pql->insertPoint(-44, 37)->insertPoint(-103, -210)->insertPoint(561, -100)->insertPoint(-3, -210);
+	pql->insertPoint(-1, 0)->insertPoint(-191, -199)->insertPoint(-2, -11)->insertPoint(-111, 110);
+
+	pql->insertPoint(22, 130)->insertPoint(31, 13)->insertPoint(40, 20)->insertPoint(9, 0);
+	pql->insertPoint(201, 16)->insertPoint(0, 31)->insertPoint(-11, 1)->insertPoint(-80, -8);
+	pql->insertPoint(44, -37)->insertPoint(-33, -10)->insertPoint(5, -100)->insertPoint(-3, 21);
+	pql->insertPoint(-1, -910)->insertPoint(-1, -19)->insertPoint(-245, 11)->insertPoint(-1, -10);
+
+	bool lookpql4 = pql->search(80, 8);
+	if (lookpql4 == true)
+		cout << "(80, 8) found in search" << endl;
+	else
+		cout << "(80, 8) not found in search" << endl;
+
+	bool canc2l = pql->cancel(80, 8); //Split Point, TOFIX delete doesn't occur
+	if (canc2l == true)
+		cout << "(80, 8) found in cancel" << endl;
+	else
+		cout << "(80, 8) not found in cancel" << endl;
+
+	bool lookpql5 = pql->search(80, 8); 
+	if (lookpql5 == true)
+		cout << "(80, 8) found in search" << endl;
+	else
+		cout << "(80, 8) not found in search" << endl;
 }
